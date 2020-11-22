@@ -1,0 +1,42 @@
+version: '3'
+
+services:
+  memcached1:
+    image: 'docker.io/bitnami/memcached:1-debian-10'
+    ports:
+      - 11212:11211
+    environment:
+      - MEMCACHED_CACHE_SIZE=128
+      - MEMCACHED_MAX_CONNECTIONS=1024
+      - MEMCACHED_THREADS=4
+  memcached2:
+    image: 'docker.io/bitnami/memcached:1-debian-10'
+    ports:
+      - 11213:11211
+    environment:
+      - MEMCACHED_CACHE_SIZE=128
+      - MEMCACHED_MAX_CONNECTIONS=1024
+      - MEMCACHED_THREADS=4
+  memcached3:
+    image: 'docker.io/bitnami/memcached:1-debian-10'
+    ports:
+      - 11214:11211
+    environment:
+      - MEMCACHED_CACHE_SIZE=128
+      - MEMCACHED_MAX_CONNECTIONS=1024
+      - MEMCACHED_THREADS=4
+  mcrouter:
+    image: 'docker.io/talisto/mcrouter:40'
+    depends_on:
+      - memcached1
+      - memcached2
+      - memcached3
+    links:
+        - memcached1:memcached1
+        - memcached2:memcached2
+        - memcached3:memcached3
+    command: |
+      mcrouter -p 11211 \
+        --config-str='{ "pools": { "A": { "servers": [ "memcached1:11211", "memcached2:11211", "memcached3:11211" ] } }, "route": { "type": "OperationSelectorRoute", "operation_policies": { "add": "AllSyncRoute|Pool|A", "get": "LatestRoute|Pool|A", "set": "AllSyncRoute|Pool|A", "delete": "AllSyncRoute|Pool|A" } } }'
+    ports:
+        - '11211:11211'
